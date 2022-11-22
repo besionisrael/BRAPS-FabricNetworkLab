@@ -163,6 +163,16 @@ function createOrgs() {
       fatalln "Failed to generate certificates..."
     fi
 
+    infoln "Creating Org3 Identities"
+
+    set -x
+    cryptogen generate --config=./organizations/cryptogen/crypto-config-org3.yaml --output="organizations"
+    res=$?
+    { set +x; } 2>/dev/null
+    if [ $res -ne 0 ]; then
+      fatalln "Failed to generate certificates..."
+    fi
+
     infoln "Creating Orderer Org Identities"
 
     set -x
@@ -200,13 +210,17 @@ function createOrgs() {
 
     createOrg2
 
+    infoln "Creating Org3 Identities"
+
+    createOrg3
+
     infoln "Creating Orderer Org Identities"
 
     createOrderer
 
   fi
 
-  infoln "Generating CCP files for Org1 and Org2"
+  infoln "Generating CCP files for Org1 Org2 Org3"
   ./organizations/ccp-generate.sh
 }
 
@@ -216,7 +230,7 @@ function createOrgs() {
 
 # The configtxgen tool is used to create the genesis block. Configtxgen consumes a
 # "configtx.yaml" file that contains the definitions for the sample network. The
-# genesis block is defined using the "TwoOrgsOrdererGenesis" profile at the bottom
+# genesis block is defined using the "ThreeOrgsOrdererGenesis" profile at the bottom
 # of the file. This profile defines a sample consortium, "SampleConsortium",
 # consisting of our two Peer Orgs. This consortium defines which organizations are
 # recognized as members of the network. The peer and ordering organizations are defined
@@ -248,7 +262,7 @@ function createConsortium() {
   # Note: For some unknown reason (at least for now) the block file can't be
   # named orderer.genesis.block or the orderer will fail to launch!
   set -x
-  configtxgen -profile TwoOrgsOrdererGenesis -channelID system-channel -outputBlock ./system-genesis-block/genesis.block
+  configtxgen -profile ThreeOrgsOrdererGenesis -channelID system-channel -outputBlock ./system-genesis-block/genesis.block
   res=$?
   { set +x; } 2>/dev/null
   if [ $res -ne 0 ]; then
@@ -285,7 +299,7 @@ function networkUp() {
   fi
 }
 
-# call the script to create the channel, join the peers of org1 and org2,
+# call the script to create the channel, join the peers of org1 org2 and org3,
 # and then update the anchor peers for each organization
 function createChannel() {
   # Bring up the network if it is not already up.
@@ -330,8 +344,8 @@ function networkDown() {
     ## remove fabric ca artifacts
     docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/org1/msp organizations/fabric-ca/org1/tls-cert.pem organizations/fabric-ca/org1/ca-cert.pem organizations/fabric-ca/org1/IssuerPublicKey organizations/fabric-ca/org1/IssuerRevocationPublicKey organizations/fabric-ca/org1/fabric-ca-server.db'
     docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/org2/msp organizations/fabric-ca/org2/tls-cert.pem organizations/fabric-ca/org2/ca-cert.pem organizations/fabric-ca/org2/IssuerPublicKey organizations/fabric-ca/org2/IssuerRevocationPublicKey organizations/fabric-ca/org2/fabric-ca-server.db'
+    docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/org3/msp organizations/fabric-ca/org3/tls-cert.pem organizations/fabric-ca/org3/ca-cert.pem organizations/fabric-ca/org3/IssuerPublicKey organizations/fabric-ca/org3/IssuerRevocationPublicKey organizations/fabric-ca/org3/fabric-ca-server.db'
     docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf organizations/fabric-ca/ordererOrg/msp organizations/fabric-ca/ordererOrg/tls-cert.pem organizations/fabric-ca/ordererOrg/ca-cert.pem organizations/fabric-ca/ordererOrg/IssuerPublicKey organizations/fabric-ca/ordererOrg/IssuerRevocationPublicKey organizations/fabric-ca/ordererOrg/fabric-ca-server.db'
-    docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf addOrg3/fabric-ca/org3/msp addOrg3/fabric-ca/org3/tls-cert.pem addOrg3/fabric-ca/org3/ca-cert.pem addOrg3/fabric-ca/org3/IssuerPublicKey addOrg3/fabric-ca/org3/IssuerRevocationPublicKey addOrg3/fabric-ca/org3/fabric-ca-server.db'
     # remove channel and script artifacts
     docker run --rm -v $(pwd):/data busybox sh -c 'cd /data && rm -rf channel-artifacts log.txt *.tar.gz'
   fi
@@ -366,10 +380,7 @@ COMPOSE_FILE_COUCH=docker/docker-compose-couch.yaml
 # certificate authorities compose file
 COMPOSE_FILE_CA=docker/docker-compose-ca.yaml
 # use this as the docker compose couch file for org3
-COMPOSE_FILE_COUCH_ORG3=addOrg3/docker/docker-compose-couch-org3.yaml
-# use this as the default docker-compose yaml definition for org3
-COMPOSE_FILE_ORG3=addOrg3/docker/docker-compose-org3.yaml
-#
+
 # chaincode language defaults to "NA"
 CC_SRC_LANGUAGE="NA"
 # Chaincode version
