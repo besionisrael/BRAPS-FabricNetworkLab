@@ -399,5 +399,67 @@ app.post('/api/queryNamed', async function (req, res) {
     }
 });
 
+app.get('/api/queryAll', async function (req, res) {
+    try {
+
+        //1. Connection Using Wallet and Access to the Gateway
+
+        // 1.1. Loading of Wallet Identity
+        // A wallet stores a collection of identities for use
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+
+        //1.2. Check to see if we've already enrolled the user.
+        // The user have to be created au prealable
+        const identity = await wallet.get(userName);
+        if (!identity) {
+            console.log(`An identity for the user "${userName}" does not exist in the wallet`);
+            console.log('Ask Admin to Run the EnrollUser application before retrying');
+            return;
+        }
+        //1.3. Load info from connection-orgX.yaml (see ccpPath)
+        let connectionProfile = yaml.safeLoad(fs.readFileSync(ccpPath, 'utf8'));
+        
+        //1.4 Set connection options; identity and wallet
+        let connectionOptions = {
+            identity: userName,
+            wallet: wallet,
+            discovery: { enabled:true, asLocalhost: true }
+        };
+        // Connect to gateway using application specified parameters
+        console.log('****Connect to Fabric gateway.****');
+
+        //1.5 Create a new gateway for connecting to our peer node.
+        const gateway = new Gateway();
+        await gateway.connect(connectionProfile, connectionOptions);
+
+        //2. Access PaperNet network
+        console.log('****Use network channel: mychannel.****');
+
+        //2.1 Get the network (channel) our contract is deployed to.
+        const network = await gateway.getNetwork('mychannel');
+
+        //2.2. Get addressability to vdx paper contract
+        console.log('Use org.copnet.vdxpaper smart contract.');
+        const contract = network.getContract('papervdx');
+
+        // Evaluate the specified transaction.
+        // queryOperator transaction - requires 1 argument, ex: ('queryAdhoc', 'queryString')
+        queryString = `["{\"selector\":{\"issuer\":{\"$ne\":""}}}"]`
+        console.log(`Query All Transactions`);
+        const result = await contract.evaluateTransaction('queryAdhoc', queryString);
+        // Status can be CREATED, ISSUED, CHECKED... BUT ALSO VALUE
+        console.log(`Transaction Query All has been evaluated, result is: ${result.toString()}`);
+        res.status(200).json({response: result.toString()});
+
+        // Disconnect from the gateway.
+        await gateway.disconnect();
+
+    } catch (error) {
+        console.error(`Failed to evaluate transaction Query All: ${error}`);
+        res.status(500).json({error: error});
+        process.exit(1);
+    }
+});
+
 
 app.listen(8081);

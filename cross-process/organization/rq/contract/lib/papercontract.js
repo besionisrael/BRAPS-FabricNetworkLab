@@ -411,7 +411,7 @@ class VdxPaperContract extends Contract {
     */
     async queryAdhoc(ctx, queryString) {
 
-        let query = new QueryUtils(ctx, 'org.papernet.paper');
+        let query = new QueryUtils(ctx, 'org.copnet.paper');
         let querySelector = JSON.parse(queryString);
         let adhoc_results = await query.queryByAdhoc(querySelector);
 
