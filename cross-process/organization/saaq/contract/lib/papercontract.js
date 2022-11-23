@@ -9,7 +9,7 @@
 // Fabric smart contract classes
 const { Contract, Context } = require('fabric-contract-api');
 
-// PaperNet specifc classes
+// CopNet specifc classes
 const VdxPaper = require('./paper.js');
 const PaperList = require('./paperlist.js');
 const QueryUtils = require('./queries.js');
@@ -69,7 +69,7 @@ class VdxPaperContract extends Contract {
      * @param {String} nas Assurance
      * @param {String} lines lines of paper
     */
-    async create(ctx, issuer, paperNumber, createDateTime, nid, nvh, fullname, nas, lines = "", docHash = "") {
+    async create(ctx, issuer, paperNumber, createDateTime, nid, nvh, fullname, nas, lines, docHash) {
 
         // create an instance of the paper
         let paper = VdxPaper.createInstance(issuer, paperNumber, createDateTime, nid, nvh, fullname, nas, lines);
@@ -124,7 +124,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
             paper.issueDateTime = issueDateTime;
         } else {
             throw new Error('\nPaper ' + issuer + paperNumber + ' is not checked. Current state = ' + paper.getCurrentState());
@@ -147,7 +147,7 @@ class VdxPaperContract extends Contract {
       * @param {String} checkDateTime time paper was checked  // transaction input - not written to asset
       * @param {String} comment A bit comment if needed  // transaction input - not written to asset
      */
-    async check(ctx, issuer, paperNumber, currentOperator, newOperator, checkDateTime, comment = "") {
+    async check(ctx, issuer, paperNumber, currentOperator, newOperator, checkDateTime, comment) {
 
         // Retrieve the current paper using key fields provided
         let paperKey = VdxPaper.makeKey([issuer, paperNumber]);
@@ -168,7 +168,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
         } else {
             throw new Error('\nPaper ' + issuer + paperNumber + ' is not checked. Current state = ' + paper.getCurrentState());
         }
@@ -210,7 +210,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
             paper.vat = parseFloat(vat);
         } else {
             throw new Error('\nPaper ' + issuer + paperNumber + ' is not treated. Current state = ' + paper.getCurrentState());
@@ -255,7 +255,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
         } else {
             throw new Error('\nPaper ' + issuer + paperNumber + ' is not treated. Current state = ' + paper.getCurrentState());
         }
@@ -276,7 +276,7 @@ class VdxPaperContract extends Contract {
       * @param {String} receiveDateTime time paper was received  // transaction input - not written to asset
       * @param {String} comment A bit comment if needed  // transaction input - not written to asset
      */
-    async receive(ctx, issuer, paperNumber, currentOperator, newOperator, receiveDateTime, comment = "") {
+    async receive(ctx, issuer, paperNumber, currentOperator, newOperator, receiveDateTime, comment) {
 
         // Retrieve the current paper using key fields provided
         let paperKey = VdxPaper.makeKey([issuer, paperNumber]);
@@ -297,7 +297,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
         } else {
             throw new Error('\nPaper ' + issuer + paperNumber + ' is not received. Current state = ' + paper.getCurrentState());
         }
@@ -318,7 +318,7 @@ class VdxPaperContract extends Contract {
       * @param {String} deliverDateTime time paper was delivered  // transaction input - not written to asset
       * @param {String} docImma paper certificate immatriculation hash linked // transaction input - not written to asset
      */
-    async deliver(ctx, issuer, paperNumber, currentOperator, newOperator, deliverDateTime, fileNumber, docImma = "") {
+    async deliver(ctx, issuer, paperNumber, currentOperator, newOperator, deliverDateTime, fileNumber, docImma) {
 
         // Retrieve the current paper using key fields provided
         let paperKey = VdxPaper.makeKey([issuer, paperNumber]);
@@ -343,7 +343,7 @@ class VdxPaperContract extends Contract {
             paper.setOperator(newOperator);
             // save the operator's MSP 
             let opMspid = ctx.clientIdentity.getMSPID();
-            paper.setOperator(opMspid);
+            paper.setOperatorMSP(opMspid);
             paper.fileNumber = fileNumber
             paper.deliverDateTime = deliverDateTime; // record delivering date against the asset (the complement to 'issue date')
             paper.docImma = docImma; // record the hash of the final doc Immatriculation delivered
@@ -411,7 +411,7 @@ class VdxPaperContract extends Contract {
     */
     async queryAdhoc(ctx, queryString) {
 
-        let query = new QueryUtils(ctx, 'org.papernet.paper');
+        let query = new QueryUtils(ctx, 'org.copnet.paper');
         let querySelector = JSON.parse(queryString);
         let adhoc_results = await query.queryByAdhoc(querySelector);
 
@@ -453,7 +453,7 @@ class VdxPaperContract extends Contract {
                 throw new Error('invalid named query supplied: ' + queryname + '- please try again ');
         }
 
-        let query = new QueryUtils(ctx, 'org.papernet.paper');
+        let query = new QueryUtils(ctx, 'org.copnet.paper');
         let adhoc_results = await query.queryByAdhoc(querySelector);
 
         return adhoc_results;

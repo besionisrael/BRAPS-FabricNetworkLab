@@ -82,7 +82,7 @@ class VdxPaper extends State {
     }
 
     setTreated() {
-        this.currentState = cpState.Treated;
+        this.currentState = cpState.TREATED;
     }
 
     setPaid() {
@@ -131,6 +131,10 @@ class VdxPaper extends State {
 
     toBuffer() {
         return Buffer.from(JSON.stringify(this));
+    }
+
+    getCurrentState(){
+        return Object.keys(cpState).find(key => cpState[key] === value);
     }
 
     /**

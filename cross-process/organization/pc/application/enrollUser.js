@@ -11,44 +11,50 @@ const { Wallets } = require('fabric-network');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
+const prompt = require("prompt-sync")({ sigint: true });
 
+ 
 async function main() {
+    //Get the USername
+    const userName = prompt("What is the username ?");
+    console.log(`The username is ${userName}`);
     try {
+
         // load the network configuration
-        let connectionProfile = yaml.safeLoad(fs.readFileSync('../gateway/connection-org2.yaml', 'utf8'));
+        let connectionProfile = yaml.safeLoad(fs.readFileSync('../gateway/connection-org3.yaml', 'utf8'));
 
         // Create a new CA client for interacting with the CA.
-        const caInfo = connectionProfile.certificateAuthorities['ca.org2.example.com'];
+        const caInfo = connectionProfile.certificateAuthorities['ca.org3.example.com'];
         const caTLSCACerts = caInfo.tlsCACerts.pem;
         const ca = new FabricCAServices(caInfo.url, { trustedRoots: caTLSCACerts, verify: false }, caInfo.caName);
 
         // Create a new file system based wallet for managing identities.
-        const walletPath = path.join(process.cwd(), '../identity/user/isabella/wallet');
+        const walletPath = path.join(process.cwd(), `../identity/user/${userName}/wallet`);
         const wallet = await Wallets.newFileSystemWallet(walletPath);
         console.log(`Wallet path: ${walletPath}`);
 
         // Check to see if we've already enrolled the admin user.
-        const userExists = await wallet.get('isabella');
+        const userExists = await wallet.get(userName);
         if (userExists) {
-            console.log('An identity for the client user "user1" already exists in the wallet');
+            console.log(`An identity for the client user "${userName}" already exists in the wallet`);
             return;
         }
 
         // Enroll the admin user, and import the new identity into the wallet.
-        const enrollment = await ca.enroll({ enrollmentID: 'user1', enrollmentSecret: 'user1pw' });
+        const enrollment = await ca.enroll({ enrollmentID: `user1`, enrollmentSecret: `user1pw` });
         const x509Identity = {
             credentials: {
                 certificate: enrollment.certificate,
                 privateKey: enrollment.key.toBytes(),
             },
-            mspId: 'Org2MSP',
+            mspId: 'Org3MSP',
             type: 'X.509',
         };
-        await wallet.put('isabella', x509Identity);
-        console.log('Successfully enrolled client user "isabella" and imported it into the wallet');
+        await wallet.put(userName, x509Identity);
+        console.log(`Successfully enrolled client user "${userName}" and imported it into the wallet`);
 
     } catch (error) {
-        console.error(`Failed to enroll client user "isabella": ${error}`);
+        console.error(`Failed to enroll client user "${userName}": ${error}`);
         process.exit(1);
     }
 }

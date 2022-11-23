@@ -2,22 +2,21 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const yaml = require('js-yaml');
-
-const app = express();
-app.use(bodyParser.json());
-
+const path = require('path');
 // Setting for Hyperledger Fabric
 const { Wallets, Gateway } = require('fabric-network');
-const fs = require('fs');
-const path = require('path');
+
 // const ccpPath = path.resolve(__dirname, '.',  'connection-org3.json');
 const ccpPath = '../gateway/connection-org1.yaml'
 const userName = 'adminRq';
-const walletPath = '../identity/user/appUser/wallet';
+const walletPath = '../identity/user/adminRq/wallet';
+const port = 8081
 
+const app = express();
+app.use(bodyParser.json());
+console.log(`****API Service for RQ running on port ${port}****`)
 
-
-app.post('/api/receive', async function (req, res) {
+app.post('/api/check', async function (req, res) {
     try {
 
         //1. Connection Using Wallet and Access to the Gateway
@@ -61,16 +60,16 @@ app.post('/api/receive', async function (req, res) {
         const contract = network.getContract('papervdx');
 
         //3. SubmitTransaction
-        //3.1  receive vdx paper
-        console.log('Submit vdx paper receive transaction.');
+        //3.1  check vdx paper
+        console.log('Submit vdx paper check transaction.');
 
-        //receive transaction - requires 7 arguments, ex: ('receive', 'PC', '00001', 'SAAQ', 'SAAQ', '2022-11-21', 'Document received');
+        //check transaction - requires 7 argument, ex: ('check', 'PC', '00001', 'RQ', 'RQ', '2022-11-21', "Document sent to Private WKF");
         let data = req.body
-        const result = await contract.submitTransaction('receive', data.issuer, data.paperNumber, data.currentOperator,
-        data.newOperator, data.receiveDateTime, data.comment);
+        const result = await contract.submitTransaction('check', 'PC', data.paperNumber, 'RQ',
+        'RQ', data.checkDateTime, data.comment);
 
         //3.2 process response
-        console.log(`Process receive transaction response. , Result is: ${result.toString()}`);
+        console.log(`Process check transaction response. , Result is: ${result.toString()}`);
 
         res.status(200).json({response: result.toString()});
 
@@ -78,13 +77,13 @@ app.post('/api/receive', async function (req, res) {
         await gateway.disconnect();
 
     } catch (error) {
-        console.error(`Failed to process receive transaction: ${error}`);
+        console.error(`Failed to process check transaction: ${error}`);
         res.status(500).json({error: error});
         process.exit(1);
     }
 });
 
-app.post('/api/deliver', async function (req, res) {
+app.post('/api/treat', async function (req, res) {
     try {
 
         //1. Connection Using Wallet and Access to the Gateway
@@ -128,16 +127,16 @@ app.post('/api/deliver', async function (req, res) {
         const contract = network.getContract('papervdx');
 
         //3. SubmitTransaction
-        //3.1  deliver vdx paper
-        console.log('Submit vdx paper deliver transaction.');
+        //3.1  treat vdx paper
+        console.log('Submit vdx paper treat transaction.');
 
-        //deliver transaction - requires 8 arguments, ex: ('deliver', 'PC', '00001', 'SAAQ', 'PC', '2022-11-21', '088383838', 'Document delivered');
+        //treat transaction - requires 8 arguments, ex: ('treat', 'PC', '00001', 'RQ', 'PC', '2022-11-21', "", "5000");
         let data = req.body
-        const result = await contract.submitTransaction('deliver', data.issuer, data.paperNumber, data.currentOperator, 
-        data.newOperator, data.deliverDateTime, data.fileNumber, data.docImma);
+        const result = await contract.submitTransaction('treat', 'PC', data.paperNumber, 'RQ', 
+        'PC', data.treatDateTime, data.docHash, data.vat);
 
         //3.2 process response
-        console.log(`Process deliver transaction response. , Result is: ${result.toString()}`);
+        console.log(`Process treat transaction response. , Result is: ${result.toString()}`);
 
         res.status(200).json({response: result.toString()});
 
@@ -145,12 +144,11 @@ app.post('/api/deliver', async function (req, res) {
         await gateway.disconnect();
 
     } catch (error) {
-        console.error(`Failed to process deliver transaction: ${error}`);
+        console.error(`Failed to process treat transaction: ${error}`);
         res.status(500).json({error: error});
         process.exit(1);
     }
 });
-
 
 app.post('/api/queryhistory', async function (req, res) {
     try {
@@ -198,8 +196,8 @@ app.post('/api/queryhistory', async function (req, res) {
         // Evaluate the specified transaction.
         // queryHistory transaction - requires 2 argument, ex: ('queryHistory', 'PC', '00001')
         data = req.body
-        console.log(`Query VDX Paper History With ${data.issuer} and ${data.paperNumber}`);
-        const result = await contract.evaluateTransaction('queryHistory', data.issuer, data.paperNumber);
+        console.log(`Query VDX Paper History of data ${data.paperNumber}`);
+        const result = await contract.evaluateTransaction('queryHistory', 'PC', data.paperNumber);
         console.log(`Transaction History has been evaluated, result is: ${result.toString()}`);
         res.status(200).json({response: result.toString()});
 
@@ -444,7 +442,8 @@ app.get('/api/queryAll', async function (req, res) {
 
         // Evaluate the specified transaction.
         // queryOperator transaction - requires 1 argument, ex: ('queryAdhoc', 'queryString')
-        queryString = `["{\"selector\":{\"issuer\":{\"$ne\":""}}}"]`
+        
+        queryString = '{"selector":{"issuer":{"$ne":""}}}'
         console.log(`Query All Transactions`);
         const result = await contract.evaluateTransaction('queryAdhoc', queryString);
         // Status can be CREATED, ISSUED, CHECKED... BUT ALSO VALUE
@@ -462,4 +461,5 @@ app.get('/api/queryAll', async function (req, res) {
 });
 
 
-app.listen(8081);
+
+app.listen(port);
