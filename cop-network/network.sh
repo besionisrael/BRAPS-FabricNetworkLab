@@ -2,7 +2,7 @@
 #
 # Copyright IBM Corp All Rights Reserved
 #
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: Apache-2.0 
 #
 
 # This script brings up a Hyperledger Fabric network for testing smart contracts
