@@ -1,4 +1,4 @@
-# Vehicle Registration Process on Hyperledger Fabric Network (Running the Network)
+# Running the Network - Vehicle Registration Process on Hyperledger Fabric Network
 
 This guide demonstrates how to set up and use a vehicle registration process example application with smart contracts on a Hyperledger Fabric network.
 
